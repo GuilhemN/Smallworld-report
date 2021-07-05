@@ -26,7 +26,7 @@
 %
 
 \title{Smallworld: Gossiping with Raspberry Pis Locally}
-\author{Romain Küenzi}
+\author{Romain Küenzi (continued by Guilhem Niot)}
 \supervisor{Dr. Erick Lavoie}
 \adviser{Professor Anne-Marie Kermarrec}
 
@@ -529,6 +529,43 @@ This section illustrates how data effectively replicate between user devices in 
   \caption{Resulting follow graph taking advantage of automatic follow on RPis}
   \label{fig:complexFinal}
 \end{figure}
+
+\chapter{Another application: Dat Protocol}
+
+Dat Protocol is a peer-to-peer protocol that allows sharing files in a distributed network.
+
+It differs from BitTorrent in that contents can be updated by their author.
+
+
+\section{Installation}
+
+The installation of Dat is quite straightforward. The commands in \ref{cmd:dat_install} are used to install dat-cli.
+
+It must be installed on both the emitter and the receiver devices.
+
+\begin{figure}
+  \begin{lstlisting}[label=cmd:dat_install, caption=Installing dat-cli]
+    wget -qO- https://raw.githubusercontent.com/datproject/dat/master/download.sh | bash
+    
+    # or
+    npm -g dat-cli
+  \end{lstlisting}
+\end{figure}
+
+\section{Using dat}
+
+The dat-cli command utility allows to simply interact with Dat files.
+
+It is possible to create a shared folder using \emph{dat share} in the folder to share. This command will give a dat url starting with \emph{dat://} that can be used to retrieve the files on other clients.
+
+A set of useful commands:
+\begin{itemize}
+  \item \emph{dat share}, to share a folder (starts a daemon that waits for incoming connexions)
+  \item \emph{dat sync}, tries to retrieve newer version of the files, and share the files for incoming connexions
+  \item \emph{dat clone <url> <folder>}, retrieves files from a dat url
+  \item \emph{dat pull}, tries to retrieve a newer version of the files
+\end{itemize}
+
 
 %%%%%%%%%%%%%%%%%%%%
 \chapter{Conclusion}
