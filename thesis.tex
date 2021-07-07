@@ -17,8 +17,14 @@
 \usepackage{listings}
 \usepackage{caption}
 \usepackage{subcaption}
+
 \renewcommand{\lstlistingname}{Configuration}
-\lstset{basicstyle=\small}
+\lstset{
+  basicstyle=\footnotesize\ttfamily,
+  columns=flexible,
+  literate={-}{-}1,
+  breaklines=true,
+}
 \lstset{captionpos=b}
 \AtBeginDocument{\def\chapterautorefname{Chapter}}
 \AtBeginDocument{\def\sectionautorefname{Section}}%
@@ -565,6 +571,111 @@ A set of useful commands:
   \item \emph{dat clone <url> <folder>}, retrieves files from a dat url
   \item \emph{dat pull}, tries to retrieve a newer version of the files
 \end{itemize}
+
+\subsection{Real time synchronization with dat-share}
+
+Dat does not directly provide a daemon to run in background and automatically synchronize folders for you. \\
+
+A tool to do just that is \emph{dat-store}. It provides a service that can be run in background, can be remotely controlled, and does all the work for you.
+
+It should be installed on both the client and the Raspberry Pi using 
+\begin{lstlisting}
+  npm -g dat-store
+\end{lstlisting}
+
+You should then configure a systemd service to run the store in background. The configuration on the user's device is 
+\begin{figure}
+  \begin{lstlisting}[label=cmd:dat_store_systemd_user, caption=Configure dat-store systemd service on the user device]
+    
+# This will create the service file.
+sudo cat << EOF | sudo tee /etc/systemd/system/dat-store.service > /dev/null
+[Unit]
+Description=Dat storage provider, keeps dats alive in the background.
+
+[Service]
+Type=simple
+# Check that dat-store is present at this location
+# If it's not, replace the path with its location
+ExecStart=$(which dat-store) run-service
+Restart=always
+
+[Install]
+WantedBy=multi-user.target
+EOF
+
+sudo chmod 644 /etc/systemd/system/dat-store.service
+
+sudo systemctl daemon-reload
+sudo systemctl enable dat-store
+sudo systemctl start dat-store
+
+sudo systemctl status dat-store
+  \end{lstlisting}
+\end{figure}
+
+\begin{lstlisting}
+  npm -g dat-store
+\end{lstlisting}
+
+You should then configure a systemd service to run the store in background. The configuration on the user's device is done according to figure \ref{cmd:dat_store_systemd_user}. The configuration on the Raspberry Pi is achieved following figure \ref{cmd:dat_store_systemd_rasp}.
+
+\begin{figure}
+  \begin{lstlisting}[label=cmd:dat_store_systemd_rasp, caption=Configure dat-store systemd service on the raspberry pi]
+    
+# This will create the service file.
+sudo cat << EOF | sudo tee /etc/systemd/system/dat-store.service > /dev/null
+[Unit]
+Description=Dat storage provider exposed to the internet (for the raspberry pi).
+
+[Service]
+Type=simple
+# Check that dat-store is present at this location
+# If it's not, replace the path with its location
+ExecStart=$(which dat-store) run-service --expose-to-internet
+Restart=always
+
+[Install]
+WantedBy=multi-user.target
+EOF
+
+sudo chmod 644 /etc/systemd/system/dat-store.service
+
+sudo systemctl daemon-reload
+sudo systemctl enable dat-store
+sudo systemctl start dat-store
+
+sudo systemctl status dat-store
+  \end{lstlisting}
+\end{figure}
+
+Dat-store uses the concept of provider. Providers are instances of dat-store running either locally or remotely. The default one is your local instance, but you can also configure other providers, like the Raspberry Pi. \\
+This notion is particularly useful for remote control of other providers. \\
+
+Dat-store provides interesting commands that we will use in our demo:
+\begin{itemize}
+  \item \emph{dat-store add <url|path> [provider]}: Adds a folder or a dat url to the dat-store of the specified provider.
+  \item \emph{dat-store set-provider <url> [provider]}: Sets the url of the specified provider.
+  \item \emph{dat-store list [provider]}: Retrieves the list of available Dats in the specified provider.
+  \item \emph{dat-store clone <path> <url> [provider]}: Clones \emph{<url>} into a local folder.
+\end{itemize}
+
+We can then imagine the case where we have two clients A and B and one Raspberry Pi used as a permanent store to synchronize a folder from A to B.
+
+First, A executes the following commands:
+\begin{lstlisting}[label=cmd:dat_store_example_A, caption=Commands executed by client A]
+
+  dat-store set-provider http://raspberry.local:3472 raspberry
+  mkdir mydat
+  dat-store add ./mydat
+  dat-store add ./mydat raspberry
+\end{lstlisting}
+
+Then, client B executes:
+\begin{lstlisting}[label=cmd:dat_store_example_A, caption=Commands executed by client A]
+
+  dat-store list raspberry
+  dat-store clone ./mydat <url obtained from the previous command>
+\end{lstlisting}
 
 
 %%%%%%%%%%%%%%%%%%%%
